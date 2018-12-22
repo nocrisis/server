@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.questionaire.mapper.QuestionnaireResultMapper">
+
+    <resultMap id="qustionnaireResultMap" type="com.questionaire.pojo.dto.QuestionnaireResultDTO">
+        <result column="result_uid" property="resultUid" jdbcType="BIGINT" />
+        <result column="open_id" property="openId" jdbcType="VARCHAR" />
+        <result column="app_id" property="appId" jdbcType="VARCHAR" />
+        <result column="nick_name" property="nickName" jdbcType="VARCHAR" />
+        <result column="head_url" property="headUrl" jdbcType="VARCHAR" />
+        <result column="questionnaire_uid" property="questionnaireUid" jdbcType="BIGINT" />
+        <result column="mall_name" property="mallName" jdbcType="VARCHAR" />
+        <result column="brand_name" property="brandName" jdbcType="VARCHAR" />
+        <result column="total_score" property="totalScore" javaType="INTEGER"/>
+        <result column="defeat_number" property="defeatNumber" javaType="INTEGER"/>
+        <result column="start_at" property="startAt" javaType="DATE"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.questionaire.pojo.po.QuestionnaireResultPO">
+        INSERT INTO lol_questionnaire_result_info
+        (result_uid, open_id, app_id, nick_name, head_url,
+        questionnaire_uid, mall_name, brand_name,
+        total_score, score_level, defeat_number,
+        start_at, created_at, created_by, updated_at)
+        VALUES
+        (#{resultUid}, #{openId}, #{appId}, #{nickName}, #{headUrl},
+        #{questionnaireUid}, #{mallName}, #{brandName},
+        #{totalScore}, #{scoreLevel}, #{defeatNumber},
+        <choose>
+            <when test="startAt == null">now()</when>
+            <otherwise>#{startAt}</otherwise>
+        </choose>, now(), #{openId}, now())
+    </insert>
+    <select id="getQuestionnaireResultByOpenIdAndQuestionnaireUid" resultMap="qustionnaireResultMap">
+		SELECT
+			result_uid, open_id, app_id, nick_name,
+			head_url, questionnaire_uid, mall_name,
+			brand_name, total_score, defeat_number, start_at
+		FROM
+			lol_questionnaire_result_info
+		WHERE
+			questionnaire_uid = #{questionnaireUid} AND open_id = #{openId} AND app_id = #{appId}
+	</select>
+    <select id="getQuestionnaireResultByUid" resultMap="qustionnaireResultMap">
+		SELECT
+			result_uid, open_id, app_id, nick_name,
+			head_url, questionnaire_uid, mall_name,
+			brand_name, total_score, defeat_number, start_at
+		FROM
+			lol_questionnaire_result_info
+		WHERE
+			result_uid = #{resultUid}
+	</select>
+</mapper>

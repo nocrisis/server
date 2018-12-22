@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.questionaire.mapper.QuestionMapper">
+    <resultMap id="questionMap" type="com.questionaire.pojo.po.QuestionPO">
+        <result column="question_uid" property="questionUid"/>
+        <result column="questionnaire_uid" property="questionnaireUid"/>
+        <result column="question_desc" property="questionDesc"/>
+        <result column="question_type" property="questionType"/>
+        <result column="total_score" property="totalScore"/>
+        <result column="is_random" property="isRandom"/>
+        <result column="is_required" property="isRequired"/>
+        <result column="is_scoring_type" property="isScoringType"/>
+
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        <result column="created_by" property="createdBy"/>
+        <result column="updated_by" property="updatedBy"/>
+
+        <collection property="options" resultMap="optionMap" />
+    </resultMap>
+
+    <resultMap id="optionMap" type="com.questionaire.pojo.po.QuestionOptionPO">
+        <result column="option_uid" property="optionUid"/>
+        <result column="option_question_uid" property="questionUid"/>
+        <result column="option_desc" property="optionDesc"/>
+        <result column="score" property="score"/>
+
+        <result column="option_created_at" property="createdAt"/>
+        <result column="option_updated_at" property="updatedAt"/>
+        <result column="option_created_by" property="createdBy"/>
+        <result column="option_updated_by" property="updatedBy"/>
+    </resultMap>
+
+    <sql id="commonColumn">
+        question.question_uid,
+        question.questionnaire_uid,
+        question.question_desc,
+        question.question_type,
+        question.total_score,
+        question.is_random,
+        question.is_required,
+        question.is_scoring_type,
+        question.created_by,
+        question.created_at,
+        question.updated_by,
+        question.updated_at,
+        question_option.option_uid,
+        question_option.question_uid AS option_question_uid,
+        question_option.option_desc,
+        question_option.score,
+        question_option.created_by AS option_created_by,
+        question_option.created_at AS option_created_at,
+        question_option.updated_by AS option_updated_by,
+        question_option.updated_at AS option_updated_at
+    </sql>
+
+    <sql id="questionCommonColumn">
+        question_uid,
+        questionnaire_uid,
+        question_desc,
+        question_type,
+        total_score,
+        is_random,
+        is_required,
+        is_scoring_type,
+        created_by,
+        created_at,
+        updated_by,
+        updated_at
+    </sql>
+
+    <select id="listQuestionsByQuestionUids" resultMap="questionMap">
+        SELECT
+            <include refid="commonColumn"/>
+        FROM
+            lol_questionnaire_question_info question
+        LEFT JOIN
+            lol_questionnaire_option_info question_option ON question.question_uid = question_option.question_uid
+        WHERE
+            question.question_uid IN <foreach collection="questionUids" open="(" close=")" item="uid" separator=",">#{uid}</foreach>
+    </select>
+
+    <select id="listQuestionsByQuestionnaireUid" resultMap="questionMap">
+        SELECT
+            <include refid="commonColumn"/>
+        FROM
+            (SELECT
+                <include refid="questionCommonColumn"/>
+            FROM
+                lol_questionnaire_question_info
+            WHERE
+                questionnaire_uid = #{questionnaireUid} AND is_random = 'TRUE'
+            ORDER BY RAND()
+            LIMIT ${questionNumber}) question
+        LEFT JOIN
+            lol_questionnaire_option_info question_option ON question.question_uid = question_option.question_uid
+    </select>
+
+
+    <select id="listQuestionsNotRandomByQuestionnaireUid" resultMap="questionMap">
+        SELECT
+            <include refid="commonColumn"/>
+        FROM
+            lol_questionnaire_question_info question
+        LEFT JOIN
+            lol_questionnaire_option_info question_option ON question.question_uid = question_option.question_uid
+        WHERE
+            question.questionnaire_uid = #{questionnaireUid} AND question.is_random = 'FALSE'
+    </select>
+</mapper>

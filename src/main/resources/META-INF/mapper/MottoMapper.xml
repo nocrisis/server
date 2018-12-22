@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.questionaire.mapper.MottoMapper">
+
+    <resultMap id="mottoInfo" type="com.questionaire.pojo.po.MottoPO">
+        <id column="id" property="id"></id>
+        <result column="motto_uid" property="mottoUid"></result>
+        <result column="motto_content" property="mottoContent"></result>
+
+        <result column="created_at" property="createdAt"></result>
+        <result column="updated_at" property="updatedAt"></result>
+    </resultMap>
+
+    <select id="getRandomMotto" resultMap="mottoInfo">
+        SELECT id, motto_uid, motto_content, created_at, updated_at
+        FROM lol_questionnaire_motto_info
+        ORDER BY RAND()
+        LIMIT 1
+    </select>
+
+</mapper>
