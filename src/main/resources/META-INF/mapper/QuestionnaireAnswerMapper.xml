@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.questionaire.mapper.QuestionnaireAnswerMapper">
+    <resultMap id="qustionnaireResultMap" type="com.questionaire.pojo.dto.questionnaire.QuestionnaireAnswerDTO">
+        <result column="sample_uid" property="sampleUid"/>
+        <result column="end_at" property="endAt" javaType="Date"/>
+        <result column="use_time" property="endAt" javaType="Integer"/>
+        <result column="questionnaire_uid" property="questionnaireUid"/>
+        <result column="start_at" property="startAt" javaType="Date"/>
+    </resultMap>
+    <insert id="insertQuestionnaireAnswer" parameterType="com.questionaire.pojo.po.questionnaire.QuestionnaireAnswerPO">
+        <selectKey keyProperty="sampleUid" resultType="string" order="BEFORE">
+            select replace(uuid(), '-', '') as sampleUid from dual
+        </selectKey>
+        INSERT INTO lol_questionnaire_answer_info
+        (sample_uid, questionnaire_uid, start_at, use_time,end_at,created_at, updated_at)
+        VALUES
+        (
+        #{sampleUid}, #{questionnaireUid},
+        <choose>
+            <when test="startAt == null">now()</when>
+            <otherwise>#{startAt}</otherwise>
+        </choose>
+        ,#{useTime}, #{endAt},now(), now()
+        )
+    </insert>
+    <select id="getSampleByUid" resultMap="qustionnaireResultMap">
+		SELECT * FROM
+			lol_questionnaire_result_info
+		WHERE
+			sample_uid = #{sampleUid}
+	</select>
+</mapper>

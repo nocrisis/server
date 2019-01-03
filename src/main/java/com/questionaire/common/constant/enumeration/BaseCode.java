@@ -6,6 +6,7 @@ import java.util.Map;
 public enum BaseCode {
     /**查询参数错误、缺少**/
     ILLEGAL_PARAMETER(19999, "参数错误"),
+	QUESTIONNAIRE_INSERT_ERROR(30000,"问卷总信息创建失败"),
 	QUESTIONNAIRE_UID_IS_EMPTY(40000,"问卷UID不能为空"),
 	USER_QUESTIONNAIRE_UNIQUE_ERROR(40001,"该用户已经填写过问卷"),
 	QUESTIONNAIRE_IS_EXIST(40002,"问卷不存在"),

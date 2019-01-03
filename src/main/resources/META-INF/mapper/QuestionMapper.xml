@@ -1,30 +1,26 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.questionaire.mapper.QuestionMapper">
-    <resultMap id="questionMap" type="com.questionaire.pojo.po.QuestionPO">
+    <resultMap id="questionMap" type="com.questionaire.pojo.dto.question.QuestionDTO">
         <result column="question_uid" property="questionUid"/>
         <result column="questionnaire_uid" property="questionnaireUid"/>
         <result column="question_desc" property="questionDesc"/>
         <result column="question_type" property="questionType"/>
-        <result column="total_score" property="totalScore"/>
-        <result column="is_random" property="isRandom"/>
         <result column="is_required" property="isRequired"/>
-        <result column="is_scoring_type" property="isScoringType"/>
-
+        <result column="is_logical" property="isLogical"/>
+        <result column="index" property="index"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
         <result column="created_by" property="createdBy"/>
         <result column="updated_by" property="updatedBy"/>
-
-        <collection property="options" resultMap="optionMap" />
+        <collection property="options" resultMap="optionMap"/>
     </resultMap>
 
-    <resultMap id="optionMap" type="com.questionaire.pojo.po.QuestionOptionPO">
+    <resultMap id="optionMap" type="com.questionaire.pojo.po.question.QuestionOptionPO">
         <result column="option_uid" property="optionUid"/>
         <result column="option_question_uid" property="questionUid"/>
         <result column="option_desc" property="optionDesc"/>
-        <result column="score" property="score"/>
-
+        <result column="link_to" property="linkTo"/>
         <result column="option_created_at" property="createdAt"/>
         <result column="option_updated_at" property="updatedAt"/>
         <result column="option_created_by" property="createdBy"/>
@@ -36,10 +32,9 @@
         question.questionnaire_uid,
         question.question_desc,
         question.question_type,
-        question.total_score,
-        question.is_random,
         question.is_required,
-        question.is_scoring_type,
+        question.is_logical,
+        question.index,
         question.created_by,
         question.created_at,
         question.updated_by,
@@ -47,7 +42,6 @@
         question_option.option_uid,
         question_option.question_uid AS option_question_uid,
         question_option.option_desc,
-        question_option.score,
         question_option.created_by AS option_created_by,
         question_option.created_at AS option_created_at,
         question_option.updated_by AS option_updated_by,
@@ -59,52 +53,134 @@
         questionnaire_uid,
         question_desc,
         question_type,
-        total_score,
         is_random,
         is_required,
-        is_scoring_type,
+        is_logical,
+        index,
         created_by,
         created_at,
         updated_by,
         updated_at
     </sql>
+    <insert id="insertOrUpdateQuestion" parameterType="com.questionaire.pojo.dto.question.QuestionDTO">
+        <selectKey keyProperty="questionUid" resultType="string" order="BEFORE">
+            select replace(uuid(), '-', '') as questionUid from dual
+        </selectKey>
+        insert into lol_questionnaire_question_info
+        (question_uid,questionnaire_uid,question_desc,question_type,is_logical,is_required,created_at,updated_at,created_by,updated_by)
+        values
+        (#{questionUid},#{questionnaireUid},#{questionDesc},#{questionType},#{is_logical},#{is_required},now(),now(),#{createdBy},#{updatedBy})
+        on duplicate key update
+        (
+        question_desc=values(question_desc),
+        question_type=values(question_type),
+        is_logical=values(is_logical),
+        is_random=values(is_random),
+        is_required=values(is_required),
+        updated_at=now(),
+        updated_by=values(updated_by)
+        )
+    </insert>
+
+    <delete id="deleteQuestionByQuestionUid">
+        delete from lol_questionnaire_question_info where question_uid =#{questionUid}
+    </delete>
+
+    <delete id="batchDeleteByQuestionUids" parameterType="java.util.List">
+        delete from lol_questionnaire_question_info
+        where question_uid in
+        <foreach collection="questionUids" index="index" item="questionUid" separator=",">
+            #{questionUid}
+        </foreach>
+    </delete>
+
+    <delete id="deleteQuestionByQuestionnaireUid">
+        delete from lol_questionnaire_question_info where question_uid =#{questionnaireUid}
+    </delete>
+
+    <insert id="insertQuestionOption" parameterType="java.util.List">
+        <selectKey keyProperty="option_uid" resultType="string" order="BEFORE">
+            select replace(uuid(), '-', '') as questionnaireUid from dual
+        </selectKey>
+        insert into lol_questionnaire_option_info
+        (
+        option_uid,question_uid,option_desc,optionLabel,link_to,created_at,updated_at,created_by,updated_by
+        )
+        <foreach collection="list" item="option" index="index" separator=",">
+            (
+            #{option.OptionUid},#{option.questionUid},#{option.optionDesc},#{option.optionLabel},#{option.linkTo},#{option.createdAt},#{option.updatedAt},#{option.createdBy},#{option.updatedBy}
+            )
+        </foreach>
+    </insert>
+    <delete id="deleteQuestionOption">
+        delete * from lol_questionnaire_option_info where question_uid =#{questionUid}
+    </delete>
+
+
+
+    <delete id="batchDeleteOptionByQuestionUids">
+        delete * from lol_questionnaire_option_info where question_uid in
+        <foreach collection="questionUids" item="questionUid" separator=",">
+            #{questionUid}
+        </foreach>
+    </delete>
 
     <select id="listQuestionsByQuestionUids" resultMap="questionMap">
         SELECT
-            <include refid="commonColumn"/>
+        <include refid="commonColumn"/>
         FROM
-            lol_questionnaire_question_info question
+        lol_questionnaire_question_info question
+        inner join
+        lol_question_index_relation rel on question.question_uid = rel.question_uid
         LEFT JOIN
-            lol_questionnaire_option_info question_option ON question.question_uid = question_option.question_uid
+        lol_questionnaire_option_info question_option ON question.question_uid = question_option.question_uid
         WHERE
-            question.question_uid IN <foreach collection="questionUids" open="(" close=")" item="uid" separator=",">#{uid}</foreach>
+        question.question_uid IN
+        <foreach collection="questionUids" open="(" close=")" item="uid" separator=",">#{uid}</foreach>
     </select>
 
     <select id="listQuestionsByQuestionnaireUid" resultMap="questionMap">
         SELECT
-            <include refid="commonColumn"/>
+        <include refid="commonColumn"/>
         FROM
-            (SELECT
-                <include refid="questionCommonColumn"/>
-            FROM
-                lol_questionnaire_question_info
-            WHERE
-                questionnaire_uid = #{questionnaireUid} AND is_random = 'TRUE'
-            ORDER BY RAND()
-            LIMIT ${questionNumber}) question
+        lol_questionnaire_question_info question
+        inner join
+        lol_question_index_relation rel on question.question_uid = rel.question_uid
         LEFT JOIN
-            lol_questionnaire_option_info question_option ON question.question_uid = question_option.question_uid
-    </select>
-
-
-    <select id="listQuestionsNotRandomByQuestionnaireUid" resultMap="questionMap">
-        SELECT
-            <include refid="commonColumn"/>
-        FROM
-            lol_questionnaire_question_info question
-        LEFT JOIN
-            lol_questionnaire_option_info question_option ON question.question_uid = question_option.question_uid
+        lol_questionnaire_option_info question_option ON question.question_uid = question_option.question_uid
         WHERE
-            question.questionnaire_uid = #{questionnaireUid} AND question.is_random = 'FALSE'
+        question.questionnaire_uid = #{questionnaireUid}
     </select>
+
+    <insert id="batchInsertQuestionIndex" parameterType="java.util.List">
+        insert into lol_questionnaire_option_info
+        (
+        question_uid,questionnaire_uidcreated_at,updated_at,created_by,updated_by
+        )
+        <foreach collection="list" item="rel" index="index" separator=",">
+            (
+            #{rel.questionUid},#{rel.questionnaireUid},#{rel.createdAt},#{rel.updatedAt}
+            )
+        </foreach>
+    </insert>
+    <delete id="batchDeleteQuestionIndexByQuestionUids" parameterType="java.util.List">
+        delete * from lol_question_index_relation where question_uid in
+        <foreach collection="list" item="rel" index="index" separator=",">
+            (
+            #{rel.questionUid}
+            )
+        </foreach>
+
+    </delete>
+
+    <delete id="deleteQuestionIndexByQuestionnaireUid">
+        delete * from lol_question_index_relation where question_uid =#{questionnaireUid}
+    </delete>
+
+    <update id="updateQuestionIndex" parameterType="com.questionaire.pojo.po.questionnaire.QuestionIndexRelationPO">
+        update lol_question_index_relation set
+        index = #{index},
+        updated_at = now()
+        where question_uid =#{questionUid}
+    </update>
 </mapper>

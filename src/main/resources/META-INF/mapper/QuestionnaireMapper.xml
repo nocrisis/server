@@ -1,21 +1,118 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.questionaire.mapper.QuestionnaireMapper">
-    <resultMap id="questionnaireInfoMap" type="com.questionaire.pojo.po.QuestionnairePO">
+    <resultMap id="questionnaireInfoMap" type="com.questionaire.pojo.po.questionnaire.QuestionnairePO">
         <result column="questionnaire_uid" property="questionnaireUid"/>
         <result column="questionnaire_name" property="questionnaireName"/>
+        <result column="introduction" property="introduction"/>
         <result column="started_at" property="startedAt"/>
         <result column="ended_at" property="endedAt"/>
-        <result column="platform" property="platform"/>
-        <result column="question_number" property="questionNumber"/>
-        <result column="note" property="note"/>
-
+        <result column="timekeeping" property="timekeeping"/>
+        <result column="questionnaire_url" property="questionnaireUrl"/>
+        <result column="user_id" property="userId"/>
+        <result column="is_issue" property="isIssue"/>
+        <result column="update_at" property="updatedAt"/>
         <result column="created_at" property="createdAt"/>
-        <result column="updated_at" property="updatedAt"/>
-        <result column="created_by" property="createdBy"/>
+        <result column="update_by" property="createdBy"/>
         <result column="updated_by" property="updatedBy"/>
     </resultMap>
+
+    <insert id="insertQuestionnaireInfo">
+        <selectKey keyProperty="questionnaireUid" resultType="string" order="BEFORE">
+            select replace(uuid(), '-', '') as questionnaireUid from dual
+        </selectKey>
+        insert into
+        lol_questionnaire_info
+        (questionnaire_uid,questionnaire_name,started_at,ended_at,timekeeping,question_number,
+        user_id,is_issue,created_at,updated_at,created_by,updated_by)
+        values
+        (#{questionnaireUid},#{questionnaireName},#{startedAt},#{endedAt},#{timekeeping},#{questionNumber},
+        #{questionnaireUrl},#{userId},#{isIssue},now(),now(),#{createdBy},#{updatedBy})
+    </insert>
+
+    <update id="updateQuestionnaireInfo" parameterType="com.questionaire.pojo.dto.questionnaire.EditQuestionnaireInfo">
+        update 
+        lol_questionnaire_info
+        set
+        <if test="timekeeping!=null and  timekeeping!=''">
+            timekeeping=#{timekeeping},
+        </if>
+        <if test="userId!=null and userId!=''">
+             user_id =#{userId},
+        </if>
+        <if test="updatedBy!=null and updatedBy!=''">
+             updated_by=#{updatedBy},
+        </if>
+        <if test="questionnaireName!=null and questionnaireName!=''">
+             questionnaire_name = #{questionnaireName},
+        </if>
+        <if test="started_at!=null">
+             started_at = #{startedAt},
+        </if>
+        <if test="ended_at!=null">
+             ended_at = #{endedAt},
+        </if>
+        updated_at = now()
+        WHERE
+        questionnaire_uid = #{questionnaireUid}
+    </update>
+
+    <update id="updateIssueStatus">
+        update
+        lol_questionnaire_info
+        set is_issue=#{isIssue},\
+        where questionnaire_uid = #{questionnaireUid}
+    </update>
+
     <select id="getQuestionnaireInfoByUid" resultMap="questionnaireInfoMap">
         select * from lol_questionnaire_info where questionnaire_uid = #{questionnaireUid}
     </select>
+
+    <select id="listQuestionnaireInfo" resultMap="questionnaireInfoMap" parameterType="com.questionaire.pojo.dto.questionnaire.QueryQuestionnaireDTO">
+        select *
+        from lol_questionnaire_info
+        where
+        user_id =#{userId}
+        <if test="questionnaireName!=null and questionnaireName!=''">
+            and questionnaire_name LIKE concat('%',#{questionnaireName},'%')
+        </if>
+        <if test="started_at!=null">
+            and started_at > #{startedAt}
+        </if>
+        <if test="ended_at!=null">
+            and #{endedAt} > ended_at
+        </if>
+        <if test="sortField != null and sortField != ''">
+            ORDER BY ${sortField} ${order}
+        </if>
+        <if test="(pageStart != null and pageStart != '') and (pageSize !=null and pageSize!='')">
+            Limit #{pageStart},#{pageSize}
+        </if>
+    </select>
+
+    <select id="countQuestionnaireInfo" resultType="integer" parameterType="com.questionaire.pojo.dto.questionnaire.QueryQuestionnaireDTO">
+        select count(*)
+        from lol_questionnaire_info
+        where
+            user_id =#{userId}
+        <if test="questionnaireName!=null and questionnaireName!=''">
+            and questionnaire_name LIKE concat('%',#{questionnaireName},'%')
+        </if>
+        <if test="started_at!=null">
+            and started_at > #{startedAt}
+        </if>
+        <if test="ended_at!=null">
+            and #{endedAt} > ended_at
+        </if>
+        <if test="sortField != null and sortField != ''">
+            ORDER BY ${sortField} ${order}
+        </if>
+        <if test="(pageStart != null and pageStart != '') and (pageSize !=null and pageSize!='')">
+            Limit #{pageStart},#{pageSize}
+        </if>
+    </select>
+    <delete id="deleteQuestionnaireInfo" parameterType="java.lang.String">
+        delete from lol_questionnaire_info
+        where questionnaire_uid = #{questionnaireUid}
+    </delete>
 </mapper>

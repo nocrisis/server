@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.questionaire.mapper.UserMapper">
+    <resultMap id="userMap" type="com.questionaire.pojo.po.user.UserInfoPO">
+        <result column="user_id" property="userId" jdbcType="VARCHAR"/>
+        <result column="user_name" property="userName" jdbcType="VARCHAR"/>
+        <result column="phone" property="phone" jdbcType="VARCHAR"/>
+        <result column="password" property="password" jdbcType="VARCHAR"/>
+    </resultMap>
+
+
+    <insert id="insertOrUpdateUser" parameterType="com.questionaire.pojo.dto.user.UserInfoDTO">
+        <selectKey keyProperty="userId" resultType="string" order="BEFORE">
+            select replace(uuid(), '-', '') as userId from dual
+        </selectKey>
+        insert into lol_user_info
+        (user_id,user_name,phone,password,created_at,updated_at,created_by,updated_by)
+        values
+        (#{userId},#{userName},#{phone},#{password},now(),now(),#{createdBy},#{updatedBy})
+        on duplicate key update
+        phone = values(phone),
+        password = values(password),
+        updated_at = now(),
+        updated_by = values(updated_by)
+    </insert>
+
+
+    <select id="getUserById" resultMap="userMap" >
+        SELECT * FROM
+        lol_user_info
+        WHERE
+        user_id = #{userId}
+    </select>
+    <select id="getUserByName" resultMap="userMap" >
+        SELECT * FROM
+        lol_user_info
+        WHERE
+        user_name = #{userName}
+    </select>
+</mapper>

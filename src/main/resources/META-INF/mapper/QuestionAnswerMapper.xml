@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.questionaire.mapper.QuestionAnswerMapper">
+    <resultMap id="qustionAnswerResultMap" type="com.questionaire.pojo.dto.question.QuestionAnswerDTO">
+        <result column="sample_uid" property="sampleUid" javaType="String"/>
+        <result column="answer_content" property="answerContent" javaType="String"/>
+        <result column="question_type" property="questionType" javaType="String"/>
+        <result column="question_uid" property="questionUid"/>
+    </resultMap>
+    <insert id="batchInsert" parameterType="com.questionaire.pojo.dto.question.SubmitAnswerDTO">
+        <selectKey keyProperty="answerUid" resultType="string" order="BEFORE">
+            select replace(uuid(), '-', '') as answerUid from dual
+        </selectKey>
+        INSERT INTO lol_questionnaire_question_answer
+        (answer_uid, question_uid, answer_content, created_at, updated_at)
+        VALUES
+        <foreach collection="answers" item="answer" separator=",">
+            (#{answer.answerUid}, #{answer.questionUid},#{answer.answerContent},now(), now())
+        </foreach>
+    </insert>
+    <select id="getQuestionAnswerByQuestionnaireUid" resultMap="qustionAnswerResultMap">
+		SELECT question.question_type,answer.* FROM
+			lol_questionnaire_question_answer answer
+			inner join lol_questionnaire_question_info question
+			on answer.question_uid= question.question_uid
+		WHERE
+			sample_uid = #{sampleUid}
+	</select>
+
+</mapper>
